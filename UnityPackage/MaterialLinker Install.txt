@@ -1,0 +1,1 @@
+To install double click unitypackage with unity open or import unity package within unity
