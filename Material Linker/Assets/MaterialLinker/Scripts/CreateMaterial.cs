@@ -5,35 +5,30 @@ using UnityEditor;
 
 public class CreateMaterial
 {
-    public string name = "test";
+    public string _name = "test";
     public Material _matToEdit;
+    public List<string> _textureNames = new List<string>();
+    public List<Texture> _textures = new List<Texture>();
 
-    public Material CM(string matName)
+    public Material CM(string matName, Shader shader, List<string> textNames)
     {
-        name = matName;
-        Material mat = new Material(Shader.Find("Standard"));
-        AssetDatabase.CreateAsset(mat, "Assets/MaterialLinker/MLMaterials/" + name + ".mat");
+        _name = matName;
+        _textureNames = textNames;
+        Material mat = new Material(shader);
+        AssetDatabase.CreateAsset(mat, "Assets/MaterialLinker/MLMaterials/" + _name + ".mat");
         return mat;
     }
 
-    public void EditMaterial(Texture main, Texture detail, Texture normal, Texture detailMainTex, Texture detailNormal, Texture emission, Texture occlusion, Texture metallic, Texture parallax)
+    public void EditMaterial(List<Texture> texturesToUse, List<string> textNames)
     {
+        _textures = texturesToUse;
+        _textureNames = textNames;
         if(_matToEdit != null)
         {
-            _matToEdit.SetTexture("_MainTex", main);
-            _matToEdit.SetTexture("_BumpMap", normal);
-            if(emission != null)
+            for (int i = 0; i < (texturesToUse.Count); i++)
             {
-                _matToEdit.EnableKeyword("_EMISSION");
-                _matToEdit.SetTexture("_EmissionMap", emission);
+                _matToEdit.SetTexture(textNames[i], texturesToUse[i]);
             }
-            _matToEdit.SetTexture("_OcclusionMap", occlusion);
-            _matToEdit.SetTexture("_MetallicGlossMap", metallic);
-            _matToEdit.SetTexture("_ParallaxMap", parallax);
-
-            _matToEdit.SetTexture("_DetailNormalMap", detailNormal);
-            _matToEdit.SetTexture("_DetailMask", detail);
-            _matToEdit.SetTexture("_DetailAlbedoMap", detailMainTex);
         }
     }
 }

@@ -5,20 +5,21 @@ using UnityEditor;
 
 public class MLEditorWindow : EditorWindow
 {
+    public string[] matOptions = new string[] {"Create New Material", "Use Existing Material"};
+    public int matOptionIndex = 0;
+    public bool editMode = false;
+    public bool sceneObjects = false;
+    public bool assetsFolder = false;
     string materialName;
     string objectTag;
-    Texture _MLmainTex;
-    Texture _MLdetailMask;
-    Texture _MLnormalMap;
-    Texture _MLalbedoMap;
-    Texture _MLemissionMap;
-    Texture _MLdetailNormalMap;
-    Texture _MLocclusionMap;
-    Texture _MLmetallicGlossMap;
-    Texture _MLparallaxMap;
-    
+    List<Texture> texturesToEdit = new List<Texture>();
+    Shader shaderToUse;
+    List<string> TextureNames = new List<string>();
+    List<string> TextureDescription = new List<string>();
     Material matToEdit;
     CreateMaterial _cm = new CreateMaterial();
+    ReadShaders _rs = new ReadShaders();
+    Vector2 scrollPos;
 
     public List<GameObject> allGameObjects = new List<GameObject>();
 
@@ -28,49 +29,78 @@ public class MLEditorWindow : EditorWindow
         GetWindow<MLEditorWindow>("Material Linker");
     }
 
+
+
     private void OnGUI()
     {
-
         GUILayout.BeginHorizontal();
-        //window
-
-        GUILayout.BeginVertical(GUILayout.MinWidth(100f));
-        //main textures
-        _MLmainTex = (Texture)EditorGUILayout.ObjectField("Main Texture", _MLmainTex, typeof(Texture));
-        _MLnormalMap = (Texture)EditorGUILayout.ObjectField("Normal Map", _MLnormalMap, typeof(Texture));
-        _MLemissionMap = (Texture)EditorGUILayout.ObjectField("Emission Map", _MLemissionMap, typeof(Texture));
-        _MLocclusionMap = (Texture)EditorGUILayout.ObjectField("Occlusion Map", _MLocclusionMap, typeof(Texture));
-        _MLmetallicGlossMap = (Texture)EditorGUILayout.ObjectField("Metallic Map", _MLmetallicGlossMap, typeof(Texture));
-        _MLparallaxMap = (Texture)EditorGUILayout.ObjectField("Parallax Map", _MLparallaxMap, typeof(Texture));
-
-        //detail textures
-        _MLdetailMask = (Texture)EditorGUILayout.ObjectField("Detail Mask", _MLdetailMask, typeof(Texture));
-        _MLalbedoMap = (Texture)EditorGUILayout.ObjectField("Detail Main Tex", _MLalbedoMap, typeof(Texture));
-        _MLdetailNormalMap = (Texture)EditorGUILayout.ObjectField("Detail Normal Map", _MLdetailNormalMap, typeof(Texture));
-        GUILayout.EndVertical();
-
-
-        GUILayout.BeginVertical(GUILayout.MinWidth(200f));
-        materialName = EditorGUILayout.TextField("Material Name", materialName);
-        
-        matToEdit = (Material)EditorGUILayout.ObjectField("Material", matToEdit, typeof(Material));
-        
-        if(GUILayout.Button("Create Material"))
+        #region Shader
+        GUILayout.BeginVertical(GUILayout.MinWidth(200f), GUILayout.ExpandWidth(true), GUILayout.MaxWidth(300f));
+        shaderToUse = (Shader)EditorGUILayout.ObjectField("Shader", shaderToUse, typeof(Shader));
+        if (GUILayout.Button(new GUIContent("Load Shader Textures", "This will load the textures of the shader type. If an existing material is used this will also load in existing textures")))
         {
-            matToEdit = _cm.CM(materialName);
+            if (shaderToUse != null)
+            {
+                TextureNames = _rs.GetShaderInfo(shaderToUse);
+                TextureDescription = _rs.GetShaderTextureDescriptions();
+                for (int i = 0; i < TextureNames.Count; i++)
+                {
+                    texturesToEdit.Add(default(Texture));
+                }
+            }
+        }
+        editMode = GUILayout.Toggle(editMode,new GUIContent("Edit Mode", "With this toggled on you can edit the material"), GUILayout.Width(100f));
+        scrollPos = EditorGUILayout.BeginScrollView(scrollPos, GUILayout.MinWidth(200f), GUILayout.ExpandWidth(true), GUILayout.MaxWidth(300f));
+        GUILayout.Box("Textures", GUILayout.MinWidth(200f), GUILayout.ExpandWidth(true), GUILayout.MaxWidth(300f));
+        for (int j = 0; j < (texturesToEdit.Count ); j++)
+        {
+            if (matToEdit != null && !editMode)
+            {
+                texturesToEdit[j] = matToEdit.GetTexture(TextureNames[j]);
+            }
+            texturesToEdit[j] = (Texture)EditorGUILayout.ObjectField(TextureDescription[j], texturesToEdit[j], typeof(Texture), false);
+        }
+        EditorGUILayout.EndScrollView();
+        GUILayout.EndVertical();
+        #endregion
+        #region Material
+        GUILayout.BeginVertical(GUILayout.MinWidth(200f), GUILayout.ExpandWidth(true), GUILayout.MaxWidth(300f));
+
+        matOptionIndex = EditorGUILayout.Popup("Material to use",matOptionIndex, matOptions);
+        switch (matOptionIndex)
+        {
+            case 0:
+                materialName = EditorGUILayout.TextField("Material Name", materialName);
+                if (GUILayout.Button("Create Material"))
+                {
+                    matToEdit = _cm.CM(materialName, shaderToUse, TextureNames);
+                    _cm._matToEdit = matToEdit;
+                    _cm.EditMaterial(texturesToEdit, TextureNames);
+                }
+                break;
+            case 1:
+                matToEdit = (Material)EditorGUILayout.ObjectField("Material", matToEdit, typeof(Material));
+                if(matToEdit != null)
+                {
+                    shaderToUse = matToEdit.shader;
+                }
+                if (GUILayout.Button(new GUIContent("Edit Material", "This will edit the current material. If the material is already assigned, the object with the material will change")))
+                {
+                    _cm._matToEdit = matToEdit;
+                    _cm.EditMaterial(texturesToEdit, TextureNames);
+                }
+                break;
         }
 
-        if(GUILayout.Button("Edit Material"))
-        {
-            _cm._matToEdit = matToEdit;
-            _cm.EditMaterial(_MLmainTex, _MLdetailMask, _MLnormalMap, _MLalbedoMap, _MLdetailNormalMap, _MLemissionMap, _MLocclusionMap,_MLmetallicGlossMap, _MLparallaxMap);
-        }
-
         GUILayout.EndVertical();
-
-        GUILayout.BeginVertical(GUILayout.MinWidth(200f));
-        objectTag = EditorGUILayout.TextField("Object Tag", objectTag, GUILayout.MinWidth(100f));
-        if(GUILayout.Button("Link to objects with tag"))
+        #endregion
+        #region Linker
+        GUILayout.BeginVertical(GUILayout.ExpandWidth(true), GUILayout.MinWidth(200f), GUILayout.MaxWidth(300f));
+        assetsFolder = GUILayout.Toggle(assetsFolder, "Apply to Assets in Asset folder", GUILayout.Width(200f));
+        sceneObjects = GUILayout.Toggle(sceneObjects, "Apply to scene objects", GUILayout.Width(200f));
+        objectTag = EditorGUILayout.TextField("Object Tag", objectTag, GUILayout.ExpandWidth(true));
+        
+        if (GUILayout.Button(new GUIContent("Apply Material on Object with Object Tag in Name", "This will add the material to objects that have the object tag in their name" )))
         {
             RefreshDatabase();
             foreach(GameObject o in allGameObjects)
@@ -82,29 +112,39 @@ public class MLEditorWindow : EditorWindow
             }
         }
         GUILayout.EndVertical();
+        #endregion
         GUILayout.EndHorizontal();
+    }
 
-
-        void RefreshDatabase()
+    #region DataBase
+    void RefreshDatabase()
+    {
+        if (assetsFolder)
         {
             allGameObjects = FindAllObjectsOfTypeInAssetDatabase<GameObject>();
         }
-
-        List<T> FindAllObjectsOfTypeInAssetDatabase<T>() where T : Object
+        if (sceneObjects)
         {
-            Debug.Log("Looking for type: " + typeof(T).ToString());
-            List<T> results = new List<T>();
-            var guids = AssetDatabase.FindAssets("t:Prefab");
-            foreach(var s in guids)
+            foreach (GameObject o in FindObjectsOfType<GameObject>())
             {
-                T foundObject = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(T)) as T;
-                if(foundObject != null)
-                {
-                    results.Add(foundObject);
-                    Debug.Log(typeof(T).ToString() + " Added: " + foundObject.name);
-                }
+                allGameObjects.Add(o);
             }
-            return results;
         }
     }
+
+    List<T> FindAllObjectsOfTypeInAssetDatabase<T>() where T : Object
+    {
+        List<T> results = new List<T>();
+        var guids = AssetDatabase.FindAssets("t:Prefab");
+        foreach (var s in guids)
+        {
+            T foundObject = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(s), typeof(T)) as T;
+            if (foundObject != null)
+            {
+                results.Add(foundObject);
+            }
+        }
+        return results;
+    }
+    #endregion
 }
