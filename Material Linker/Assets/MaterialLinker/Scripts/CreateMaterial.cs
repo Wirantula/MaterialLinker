@@ -19,7 +19,7 @@ public class CreateMaterial
         return mat;
     }
 
-    public void EditMaterial(List<Texture> texturesToUse, List<string> textNames)
+    public void EditMaterial(List<Texture> texturesToUse, List<string> textNames, List<Color> colorsToUse, List<string> colorNames, List<float> floatsToUse, List<string> floatNames)
     {
         _textures = texturesToUse;
         _textureNames = textNames;
@@ -28,6 +28,14 @@ public class CreateMaterial
             for (int i = 0; i < (texturesToUse.Count); i++)
             {
                 _matToEdit.SetTexture(textNames[i], texturesToUse[i]);
+            }
+            for (int i = 0; i < colorsToUse.Count; i++)
+            {
+                _matToEdit.SetColor(colorNames[i], colorsToUse[i]);
+            }
+            for (int i = 0; i < floatsToUse.Count; i++)
+            {
+                _matToEdit.SetFloat(floatNames[i], floatsToUse[i]);
             }
         }
     }
