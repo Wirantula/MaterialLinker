@@ -1,10 +1,10 @@
-Material linker is made to make it easier to create materials and put them on the right objects
+Material linker is made to make it easier to create materials and apply them to the objects you want them to.
+It features material creation, material editing, automatic object apply and chosen obejct apply.
 
-to use it, either type a name for the material in the material name slot and press create material,
-or select an existing material in the material slot.
+You can open the tool by going to window and click Material Linker, a new window should pop up.
+there is a guide to use the tool within the window. It'll open if you click on the toggle button with the
+tool guide in the left upper corner.
 
-add in the texture maps you wish to use in the correct slots and press edit material.
-
-if you now want to apply the material to objects, type a part of the object name in the object tag slot.
-if you know press link to objects with tag, the tool will go through the entire assets folder and apply
-the material to every PREFAB that contains the object tag in its name
+Material Linker is mainly used to make it easier to apply materials to multiple objects or to make sure
+you only touch the things that are necessary to edit, create and apply materials to objects. Making
+the engine easier to use for non developers to work with objects and materials
